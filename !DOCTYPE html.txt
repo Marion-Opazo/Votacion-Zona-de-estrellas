@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votación en Tiempo Real</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-6">
+  <div class="bg-purple-800/30 p-6 rounded-2xl shadow-xl w-full max-w-md text-center">
+    <h1 class="text-2xl font-bold mb-4 text-purple-300">Votación en Tiempo Real</h1>
+    <div class="flex justify-center gap-4 mb-6">
+      <button id="btn-si" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl">Sí</button>
+      <button id="btn-no" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl">No</button>
+    </div>
+    <canvas id="resultChart" class="mt-4"></canvas>
+  </div>
+
+  <script>
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_DOMINIO.firebaseapp.com",
+      projectId: "TU_ID_PROYECTO",
+      storageBucket: "TU_BUCKET.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const votosRef = db.collection('votacion').doc('conteo');
+
+    const btnSi = document.getElementById('btn-si');
+    const btnNo = document.getElementById('btn-no');
+
+    btnSi.onclick = () => {
+      votosRef.update({ si: firebase.firestore.FieldValue.increment(1) });
+    }
+
+    btnNo.onclick = () => {
+      votosRef.update({ no: firebase.firestore.FieldValue.increment(1) });
+    }
+
+    const ctx = document.getElementById('resultChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Sí', 'No'],
+        datasets: [{
+          label: 'Votos',
+          backgroundColor: ['#a855f7', '#6b21a8'],
+          data: [0, 0]
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    // Actualización en tiempo real
+    votosRef.onSnapshot(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        chart.data.datasets[0].data = [data.si || 0, data.no || 0];
+        chart.update();
+      }
+    });
+  </script>
+</body>
+</html>
